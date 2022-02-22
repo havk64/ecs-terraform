@@ -1,0 +1,11 @@
+environment = "production"
+prefix_name = "lb-test"
+service_name = "lb-test"
+aws_region = "eu-west-3"
+container_image = "strm/helloworld-http"
+container_port = 80
+task_definition_name = "lb-test"
+ec2_desired_count = 4
+ecs_desired_count = 8
+cpu = 4
+memory = 256

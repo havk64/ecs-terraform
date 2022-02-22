@@ -26,6 +26,7 @@ variable "environment" {
   default     = "development"
   description = "Sets the default environment (development, staging, production)"
 }
+
 variable "enable_dns_support" {
   type        = bool
   default     = true
