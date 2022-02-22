@@ -1,90 +1,90 @@
 locals {
-    cluster_name = "${var.prefix_name}-${var.environment}"
+  cluster_name = "${var.prefix_name}-${var.environment}"
 }
 
 resource "aws_vpc" "stage" {
-    cidr_block           = var.vpc_cidr // default: "10.0.0.0/16": 10.0.0.0 => 10.0.255.255 = 65.536
-    enable_dns_hostnames = var.enable_dns_hostnames
-    enable_dns_support = var.enable_dns_support
-    tags = {
-        Name = var.prefix_name
-        Environment = var.environment
-        Automation = var.automation_tag
-    }
+  cidr_block           = var.vpc_cidr // default: "10.0.0.0/16": 10.0.0.0 => 10.0.255.255 = 65.536
+  enable_dns_hostnames = var.enable_dns_hostnames
+  enable_dns_support   = var.enable_dns_support
+  tags = {
+    Name        = var.prefix_name
+    Environment = var.environment
+    Automation  = var.automation_tag
+  }
 }
 
 data "aws_availability_zones" "available" {}
 
 resource "aws_subnet" "public" {
-    vpc_id = aws_vpc.stage.id
-    count = length(var.subnet_cidrs)
-    cidr_block = element(var.subnet_cidrs, count.index) // default: 10.0.0.0 -> 10.0.0.255 = 256
-    availability_zone = data.aws_availability_zones.available.names[count.index]
-    map_public_ip_on_launch = var.map_public_ip_on_launch // default: true
+  vpc_id                  = aws_vpc.stage.id
+  count                   = length(var.subnet_cidrs)
+  cidr_block              = element(var.subnet_cidrs, count.index) // default: 10.0.0.0 -> 10.0.0.255 = 256
+  availability_zone       = data.aws_availability_zones.available.names[count.index]
+  map_public_ip_on_launch = var.map_public_ip_on_launch // default: true
 
-    tags = {
-        Name = "${var.prefix_name}_${element(data.aws_availability_zones.available.names, count.index)}"
-        Environment = var.environment
-        Automation = var.automation_tag
-    }
+  tags = {
+    Name        = "${var.prefix_name}_${element(data.aws_availability_zones.available.names, count.index)}"
+    Environment = var.environment
+    Automation  = var.automation_tag
+  }
 }
 
 resource "aws_internet_gateway" "gw" {
-    vpc_id = aws_vpc.stage.id
-    tags = {
-        Environment = var.environment
-        Automation = var.automation_tag
-    }
+  vpc_id = aws_vpc.stage.id
+  tags = {
+    Environment = var.environment
+    Automation  = var.automation_tag
+  }
 }
 
 resource "aws_route_table" "public" {
   vpc_id = aws_vpc.stage.id
 
   route {
-      cidr_block = "0.0.0.0/0"
-      gateway_id = aws_internet_gateway.gw.id
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.gw.id
   }
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
 resource "aws_route_table_association" "public" {
-  count = length(aws_subnet.public.*.id)
-  subnet_id = element(aws_subnet.public.*.id, count.index)
+  count          = length(aws_subnet.public.*.id)
+  subnet_id      = element(aws_subnet.public.*.id, count.index)
   route_table_id = aws_route_table.public.id
 }
 
 resource "aws_security_group" "ec2" {
   description = "ECS Security Group"
-  vpc_id = aws_vpc.stage.id
+  vpc_id      = aws_vpc.stage.id
   ingress {
-      from_port = 22
-      to_port = 22
-      protocol = "tcp"
-      cidr_blocks = ["0.0.0.0/0"]
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
   }
   ingress {
-    from_port = 32768
-    to_port = 65535
-    protocol = "tcp"
+    from_port       = 32768
+    to_port         = 65535
+    protocol        = "tcp"
     security_groups = [aws_security_group.lb_sg.id]
   }
   egress {
-    from_port = 443
-    to_port = 443
-    protocol = "tcp"
+    from_port   = 443
+    to_port     = 443
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
 resource "aws_security_group" "lb_sg" {
-  vpc_id = aws_vpc.stage.id
+  vpc_id      = aws_vpc.stage.id
   name_prefix = local.cluster_name
 }
 
@@ -107,56 +107,55 @@ resource "aws_security_group_rule" "internet_access" {
 }
 
 data "aws_ami" "latest_ecs_ami" {
-    most_recent = true
-    filter {
-        name = "name"
-        values = ["amzn2-ami-ecs-hvm-*"]
-    }
-    filter {
-        name = "architecture"
-        values = ["x86_64"]
-    }
-    owners = ["amazon"]
+  most_recent = true
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-ecs-hvm-*"]
+  }
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+  owners = ["amazon"]
 }
 
 resource "aws_launch_configuration" "ec2" {
-    image_id = var.aws_ami != "" ? var.aws_ami : data.aws_ami.latest_ecs_ami.image_id
-    instance_type = var.instance_type // default: t2.micro
-    iam_instance_profile = aws_iam_instance_profile.ecs_instance_profile.name
-    security_groups = [aws_security_group.ec2.id]
-    associate_public_ip_address = var.associate_public_ip // default: true
-    key_name = var.ssh_key_name
-    user_data = <<EOF
+  image_id                    = var.aws_ami != "" ? var.aws_ami : data.aws_ami.latest_ecs_ami.image_id
+  instance_type               = var.instance_type // default: t2.micro
+  iam_instance_profile        = aws_iam_instance_profile.ecs_instance_profile.name
+  security_groups             = [aws_security_group.ec2.id]
+  associate_public_ip_address = var.associate_public_ip // default: true
+  key_name                    = var.ssh_key_name
+  user_data                   = <<EOF
     #!/bin/bash
     echo ECS_CLUSTER="${local.cluster_name}" >> /etc/ecs/ecs.config
     EOF
-    lifecycle {
-        create_before_destroy = true
-    }
-}
-
-resource "aws_autoscaling_group" "orchestra" {
-    name = "asg-${local.cluster_name}"
-    vpc_zone_identifier = aws_subnet.public.*.id
-    launch_configuration = aws_launch_configuration.ec2.name
-    desired_capacity = var.ec2_desired_count
-    min_size = var.asg_min_size
-    max_size = var.asg_max_size
-    health_check_grace_period = 300
-    health_check_type = "EC2"
-    tag {
-      key = "AmazonECSManaged"
-      value = true
-      propagate_at_launch = true
-    }
-    tag {
-      key = "Environment"
-      value = var.environment
-      propagate_at_launch = true
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
-// IAM:
+resource "aws_autoscaling_group" "orchestra" {
+  name                      = "asg-${local.cluster_name}"
+  vpc_zone_identifier       = aws_subnet.public.*.id
+  launch_configuration      = aws_launch_configuration.ec2.name
+  desired_capacity          = var.ec2_desired_count
+  min_size                  = var.asg_min_size
+  max_size                  = var.asg_max_size
+  health_check_grace_period = 300
+  health_check_type         = "EC2"
+  tag {
+    key                 = "AmazonECSManaged"
+    value               = true
+    propagate_at_launch = true
+  }
+  tag {
+    key                 = "Environment"
+    value               = var.environment
+    propagate_at_launch = true
+  }
+}
+
 data "aws_iam_policy_document" "assume_role" {
   statement {
     actions = ["sts:AssumeRole"]
@@ -172,8 +171,8 @@ resource "aws_iam_role" "instance_role" {
   name               = "ecs-instance-role-${local.cluster_name}"
   assume_role_policy = data.aws_iam_policy_document.assume_role.json
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -191,8 +190,8 @@ resource "aws_iam_instance_profile" "ecs_instance_profile" {
   name = "ecs_agent-${local.cluster_name}"
   role = aws_iam_role.instance_role.id
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -205,8 +204,8 @@ resource "aws_alb_target_group" "default" {
     path = var.container_healthcheck_path
   }
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -215,8 +214,8 @@ resource "aws_alb" "main" {
   subnets         = aws_subnet.public.*.id
   security_groups = [aws_security_group.lb_sg.id]
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -230,8 +229,8 @@ resource "aws_alb_listener" "front_end" {
     type             = "forward"
   }
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -250,8 +249,8 @@ resource "aws_iam_role" "ecs_service" {
   name               = "ecs-service-role-${local.cluster_name}"
   assume_role_policy = data.aws_iam_policy_document.assume_ecs_role.json
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -263,8 +262,8 @@ resource "aws_iam_role_policy_attachment" "ecs_lb" {
 resource "aws_ecs_cluster" "groover" {
   name = local.cluster_name
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -280,30 +279,30 @@ resource "aws_ecs_task_definition" "rocker" {
       portMappings = [
         {
           containerPort = var.container_port
-          hostPort      = var.host_port      // default: 0
+          hostPort      = var.host_port // default: 0
         }
       ]
       logConfiguration = {
         logDriver = "awslogs"
         options = {
-          awslogs-group = aws_cloudwatch_log_group.groover.name
-          awslogs-region = var.aws_region
+          awslogs-group         = aws_cloudwatch_log_group.groover.name
+          awslogs-region        = var.aws_region
           awslogs-stream-prefix = "ecs"
         }
       }
     }
   ])
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
 resource "aws_cloudwatch_log_group" "groover" {
   name = "${local.cluster_name}/hello"
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
 
@@ -327,7 +326,7 @@ resource "aws_ecs_service" "hello" {
   ]
 
   tags = {
-      Environment = var.environment
-      Automation = var.automation_tag
+    Environment = var.environment
+    Automation  = var.automation_tag
   }
 }
