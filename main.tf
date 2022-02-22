@@ -3,7 +3,7 @@ locals {
 }
 
 resource "aws_vpc" "stage" {
-    cidr_block           = var.vpc_cidr
+    cidr_block           = var.vpc_cidr // default: "10.0.0.0/16": 10.0.0.0 => 10.0.255.255 = 65.536
     enable_dns_hostnames = var.enable_dns_hostnames
     enable_dns_support = var.enable_dns_support
     tags = {
@@ -18,9 +18,9 @@ data "aws_availability_zones" "available" {}
 resource "aws_subnet" "public" {
     vpc_id = aws_vpc.stage.id
     count = length(var.subnet_cidrs)
-    cidr_block = element(var.subnet_cidrs, count.index)
+    cidr_block = element(var.subnet_cidrs, count.index) // default: 10.0.0.0 -> 10.0.0.255 = 256
     availability_zone = data.aws_availability_zones.available.names[count.index]
-    map_public_ip_on_launch = var.map_public_ip_on_launch
+    map_public_ip_on_launch = var.map_public_ip_on_launch // default: true
 
     tags = {
         Name = "${var.prefix_name}_${element(data.aws_availability_zones.available.names, count.index)}"
@@ -121,10 +121,10 @@ data "aws_ami" "latest_ecs_ami" {
 
 resource "aws_launch_configuration" "ec2" {
     image_id = var.aws_ami != "" ? var.aws_ami : data.aws_ami.latest_ecs_ami.image_id
-    instance_type = var.instance_type
+    instance_type = var.instance_type // default: t2.micro
     iam_instance_profile = aws_iam_instance_profile.ecs_instance_profile.name
     security_groups = [aws_security_group.ec2.id]
-    associate_public_ip_address = var.associate_public_ip
+    associate_public_ip_address = var.associate_public_ip // default: true
     key_name = var.ssh_key_name
     user_data = <<EOF
     #!/bin/bash
@@ -280,7 +280,7 @@ resource "aws_ecs_task_definition" "rocker" {
       portMappings = [
         {
           containerPort = var.container_port
-          hostPort      = var.host_port
+          hostPort      = var.host_port      // default: 0
         }
       ]
       logConfiguration = {
@@ -311,7 +311,7 @@ resource "aws_ecs_service" "hello" {
   name            = var.service_name
   cluster         = aws_ecs_cluster.groover.id
   task_definition = aws_ecs_task_definition.rocker.arn
-  desired_count   = var.ecs_desired_count
+  desired_count   = var.ecs_desired_count // default: 5
   iam_role        = aws_iam_role.ecs_service.name
   propagate_tags  = "SERVICE"
 
