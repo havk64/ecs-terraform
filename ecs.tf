@@ -3,7 +3,7 @@ provider "aws" {
 }
 // Example 1 (hard coded values):
 module "hello" {
-  source = "./ecs"
+  source = "./modules/ecs"
 
   prefix_name          = "hello"
   aws_region           = "eu-west-3" // Paris
@@ -22,7 +22,7 @@ module "hello" {
 
 // Example 2 (using vars file and uploading ssh pub key to EC2 instances):
 module "lb_test" {
-  source = "./ecs"
+  source = "./modules/ecs"
 
   prefix_name          = var.prefix_name
   aws_region           = var.aws_region
