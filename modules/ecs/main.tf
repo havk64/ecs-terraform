@@ -5,10 +5,10 @@ locals {
 module "vpc" {
   source = "../vpc"
 
-  vpc_cidr = var.vpc_cidr
-  enable_dns_hostnames = var.enable_dns_hostnames
-  enable_dns_support = var.enable_dns_support
-  name = var.prefix_name
+  vpc_cidr = var.vpc_cidr // default: "10.0.0.0/16" = 10.0.0.0 => 10.0.255.255 = 65.536 nodes
+  enable_dns_hostnames = true
+  enable_dns_support = true
+  name = local.cluster_name
   environment = var.environment
   automation_tag = var.automation_tag
 }
