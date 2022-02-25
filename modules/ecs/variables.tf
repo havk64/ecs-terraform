@@ -10,27 +10,26 @@ variable "vpc_cidr" {
   description = "VPC cidr"
 }
 
-variable "subnet_cidrs" {
-  type    = list(any)
-  default = ["10.0.0.0/24", "10.0.1.0/24"]
-}
-
 variable "enable_dns_hostnames" {
   type        = bool
   default     = true
   description = "Enable/disable dns_hostnames on vpc"
 }
 
-variable "environment" {
-  type        = string
-  default     = "development"
-  description = "Sets the default environment (development, staging, production)"
-}
-
 variable "enable_dns_support" {
   type        = bool
   default     = true
   description = "Enable/disable vpc dns support"
+}
+
+variable "subnet_cidrs" {
+  type    = list(any)
+  default = ["10.0.0.0/24", "10.0.1.0/24"]
+}
+
+variable "environment" {
+  type        = string
+  description = "Sets the default environment (development, staging, production)"
 }
 
 variable "map_public_ip_on_launch" {
