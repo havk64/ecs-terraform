@@ -5,7 +5,7 @@ provider "aws" {
 module "hello" {
   source = "./modules/ecs"
 
-  prefix_name          = "hello"
+  prefix_name          = "groover"
   aws_region           = "eu-west-3" // Paris
   ec2_desired_count    = 2
   environment          = "development"
