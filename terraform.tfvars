@@ -1,5 +1,5 @@
 environment = "production"
-prefix_name = "lb-test"
+prefix_name = "groover"
 service_name = "lb-test"
 aws_region = "eu-west-3"
 container_image = "strm/helloworld-http"

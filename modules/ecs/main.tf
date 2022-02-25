@@ -2,21 +2,21 @@ locals {
   cluster_name = "${var.prefix_name}-${var.environment}"
 }
 
-resource "aws_vpc" "stage" {
-  cidr_block           = var.vpc_cidr // default: "10.0.0.0/16": 10.0.0.0 => 10.0.255.255 = 65.536
-  enable_dns_hostnames = var.enable_dns_hostnames
-  enable_dns_support   = var.enable_dns_support
-  tags = {
-    Name        = var.prefix_name
-    Environment = var.environment
-    Automation  = var.automation_tag
-  }
+module "vpc" {
+  source = "../vpc"
+
+  vpc_cidr = var.vpc_cidr // default: "10.0.0.0/16" = 10.0.0.0 => 10.0.255.255 = 65.536 nodes
+  enable_dns_hostnames = true
+  enable_dns_support = true
+  name = local.cluster_name
+  environment = var.environment
+  automation_tag = var.automation_tag
 }
 
 data "aws_availability_zones" "available" {}
 
 resource "aws_subnet" "public" {
-  vpc_id                  = aws_vpc.stage.id
+  vpc_id                  = module.vpc.id
   count                   = length(var.subnet_cidrs)
   cidr_block              = element(var.subnet_cidrs, count.index) // default: 10.0.0.0 -> 10.0.0.255 = 256
   availability_zone       = data.aws_availability_zones.available.names[count.index]
@@ -29,20 +29,12 @@ resource "aws_subnet" "public" {
   }
 }
 
-resource "aws_internet_gateway" "gw" {
-  vpc_id = aws_vpc.stage.id
-  tags = {
-    Environment = var.environment
-    Automation  = var.automation_tag
-  }
-}
-
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.stage.id
+  vpc_id = module.vpc.id
 
   route {
     cidr_block = "0.0.0.0/0"
-    gateway_id = aws_internet_gateway.gw.id
+    gateway_id = module.vpc.gw_id
   }
   tags = {
     Environment = var.environment
@@ -58,7 +50,7 @@ resource "aws_route_table_association" "public" {
 
 resource "aws_security_group" "ec2" {
   description = "ECS Security Group"
-  vpc_id      = aws_vpc.stage.id
+  vpc_id      = module.vpc.id
   ingress {
     from_port   = 22
     to_port     = 22
@@ -84,7 +76,7 @@ resource "aws_security_group" "ec2" {
 }
 
 resource "aws_security_group" "lb_sg" {
-  vpc_id      = aws_vpc.stage.id
+  vpc_id      = module.vpc.id
   name_prefix = local.cluster_name
 }
 
@@ -199,7 +191,7 @@ resource "aws_alb_target_group" "default" {
   name     = "alb-target-${local.cluster_name}"
   port     = var.container_port
   protocol = "HTTP"
-  vpc_id   = aws_vpc.stage.id
+  vpc_id   = module.vpc.id
   health_check {
     path = var.container_healthcheck_path
   }

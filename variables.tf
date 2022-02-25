@@ -1,6 +1,5 @@
 variable "prefix_name" {
   type = string
-  default = "groover"
   description = "Base name to be used as prefix"
 }
  

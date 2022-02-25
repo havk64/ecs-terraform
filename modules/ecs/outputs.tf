@@ -4,7 +4,7 @@ output "aws_ami_id" {
 }
 
 output "vpc_id" {
-  value       = aws_vpc.stage.id
+  value       = module.vpc.id
   description = "VPC cluster ID"
 }
 
