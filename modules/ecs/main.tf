@@ -2,8 +2,8 @@ locals {
   cluster_name = "${var.prefix_name}-${var.environment}"
 }
 
-module "vpc" {
-  source = "../vpc"
+module "network" {
+  source = "../network"
 
   vpc_cidr = var.vpc_cidr // default: "10.0.0.0/16" = 10.0.0.0 => 10.0.255.255 = 65.536 nodes
   enable_dns_hostnames = true
