@@ -1,11 +1,15 @@
+variable "prefix_name" {
+  type        = string
+  description = "Base name to be used as prefix"
+}
+
 variable "vpc_id" {
   type        = string
   description = "ID of VPC to be used"
 }
 
-variable "ssh_cidr_block" {
+variable "ssh_allowed_cidr_block" {
   type    = list(string)
-  default = ["0.0.0.0/0"]
   description = "Cidr block for ssh connections on port 22"
 }
 
@@ -16,13 +20,11 @@ variable "environment" {
 
 variable "automation_tag" {
   type        = string
-  default     = "Terraform"
   description = "Tag indicating the automation tool used"
 }
 
 variable "aws_ami" {
   type        = string
-  default     = ""
   description = "The AWS ami id to use"
 }
 
@@ -34,7 +36,7 @@ variable "instance_type" {
 
 variable "associate_public_ip" {
   type        = bool
-  description = "Associate a public ip address with an instance in a VPC" // TODO: improve description
+  description = "Whether to associate a public IP address with an instance in a VPC"
 }
 
 variable "ec2_desired_count" {

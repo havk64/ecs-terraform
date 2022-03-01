@@ -37,16 +37,16 @@ variable "instance_type" {
   description = "EC2 instance type"
 }
 
-variable "aws_ami" {
-  type        = string
-  default     = ""
-  description = "The AWS ami id to use"
-}
-
 variable "ssh_key_name" {
   type        = string
   default     = ""
   description = "SSH public key used to access EC2 instances"
+}
+
+variable "aws_ami" {
+  type        = string
+  default     = ""
+  description = "The AWS ami id to use"
 }
 
 variable "aws_region" {
@@ -121,7 +121,7 @@ variable "lb_internal_protocol" {
 variable "associate_public_ip" {
   type        = bool
   default     = true
-  description = "Associate a public ip address with an instance in a VPC"
+  description = "Whether to associate a public IP address with an instance in a VPC"
 }
 
 variable "ec2_desired_count" {
@@ -145,4 +145,10 @@ variable "automation_tag" {
   type        = string
   default     = "Terraform"
   description = "Tag indicating the automation tool used"
+}
+
+variable "ssh_allowed_cidr_block" {
+  type = list(string)
+  default = ["0.0.0.0/0"]
+  description = "List of network addresses that will be allowed to connect via SSH to instances"
 }
