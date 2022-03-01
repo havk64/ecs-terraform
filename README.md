@@ -36,6 +36,10 @@ that is, the same level as the [`ecs.tf`](ecs.tf) file.
 
 ## Improvements
 
-Next possible improvement is to split the big `ecs` module into small submodules to
+<del>Next possible improvement is to split the big `ecs` module into small submodules to
 make it more manageable, improve code reuse and allow the use of individual modules
-when appropriate.
+when appropriate.</del> Done!
+
+Next improvement, in progress, it is to move the EC2 instances into a private subnet,
+allow them to connect to the internet by means of an added NAT gateway and let only
+the Load Balancer publicly exposed to increase the security of the cluster.
