@@ -13,13 +13,29 @@ module "network" {
   map_public_ip_on_launch = var.map_public_ip_on_launch
 }
 
+module "asg" {
+  source = "../asg"
+
+  vpc_id = module.network.vpc_id
+  public_subnet_ids = module.network.public_subnets.*.id
+  ssh_allowed_cidr_block = var.ssh_allowed_cidr_block
+  prefix_name = var.prefix_name
+  environment = var.environment
+  automation_tag = var.automation_tag
+  aws_ami = var.aws_ami
+  instance_type = var.instance_type
+  associate_public_ip = var.associate_public_ip
+  ssh_key_name = var.ssh_key_name
+  ec2_desired_count = var.ec2_desired_count
+  asg_max_size = var.asg_max_size
+  asg_min_size = var.asg_min_size
 }
 
 resource "aws_alb_target_group" "default" {
   name     = "alb-target-${local.cluster_name}"
   port     = var.container_port
   protocol = "HTTP"
-  vpc_id   = module.vpc.id
+  vpc_id   = module.network.vpc_id
   health_check {
     path = var.container_healthcheck_path
   }
@@ -31,8 +47,8 @@ resource "aws_alb_target_group" "default" {
 
 resource "aws_alb" "main" {
   name            = "alb-${local.cluster_name}"
-  subnets         = aws_subnet.public.*.id
-  security_groups = [aws_security_group.lb_sg.id]
+  subnets         = module.network.public_subnets.*.id //before: module.network.public_subnet_ids
+  security_groups = [module.asg.lb_sg_id]
   tags = {
     Environment = var.environment
     Automation  = var.automation_tag
