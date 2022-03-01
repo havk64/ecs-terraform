@@ -18,3 +18,13 @@ variable "automation_tag" {
   default     = "Terraform"
   description = "Tag indicating the automation tool used"
 }
+
+variable "enable_dns_hostnames" {
+  type        = bool
+  description = "Enable/disable dns_hostnames on vpc"
+}
+
+variable "enable_dns_support" {
+  type        = bool
+  description = "Enable/disable vpc dns support"
+}
